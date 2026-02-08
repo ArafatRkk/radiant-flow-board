@@ -41,6 +41,13 @@ export function useVoiceRecognition() {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const fullTranscriptRef = useRef("");
   const manualStopRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const isListeningRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -48,7 +55,7 @@ export function useVoiceRecognition() {
       setIsSupported(true);
       const recognition = new SpeechRecognition();
       
-      // CRITICAL: Set continuous to true so it keeps listening
+      // Set continuous to true so it keeps listening
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "bn-BD"; // Bangla (Bangladesh) - also understands English
@@ -74,11 +81,12 @@ export function useVoiceRecognition() {
         // Show current state: final + interim
         const displayTranscript = (fullTranscriptRef.current + " " + interimTranscript).trim();
         setTranscript(displayTranscript);
+        console.log("Voice transcript:", displayTranscript);
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error("Speech recognition error:", event.error);
-        // Don't stop on "no-speech" error, just continue
+        // Don't stop on "no-speech" or "aborted" errors
         if (event.error !== "no-speech" && event.error !== "aborted") {
           setIsListening(false);
           setIsFinalizing(false);
@@ -86,14 +94,23 @@ export function useVoiceRecognition() {
       };
 
       recognition.onend = () => {
-        // If user manually stopped, finalize. Otherwise restart if still listening
-        if (manualStopRef.current) {
+        console.log("Recognition ended. Manual stop:", manualStopRef.current, "Cancelled:", cancelledRef.current);
+        
+        if (cancelledRef.current) {
+          // User cancelled - don't finalize, just stop
+          cancelledRef.current = false;
+          setIsListening(false);
+          setIsFinalizing(false);
+        } else if (manualStopRef.current) {
+          // User clicked stop to send - finalize
+          manualStopRef.current = false;
           setIsListening(false);
           setIsFinalizing(true);
-          manualStopRef.current = false;
-        } else if (isListening) {
-          // Auto-restart if not manually stopped (browser may stop after silence)
+          console.log("Finalizing with transcript:", fullTranscriptRef.current);
+        } else if (isListeningRef.current) {
+          // Auto-restart if browser stopped due to silence
           try {
+            console.log("Auto-restarting recognition...");
             recognition.start();
           } catch (e) {
             console.log("Could not restart recognition:", e);
@@ -110,13 +127,15 @@ export function useVoiceRecognition() {
         recognitionRef.current.abort();
       }
     };
-  }, [isListening]);
+  }, []); // Empty dependency array - only run once
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
+      console.log("Starting voice recognition...");
       setTranscript("");
       fullTranscriptRef.current = "";
       manualStopRef.current = false;
+      cancelledRef.current = false;
       setIsFinalizing(false);
       try {
         recognitionRef.current.start();
@@ -129,11 +148,25 @@ export function useVoiceRecognition() {
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
+      console.log("Stopping voice recognition to send...");
       manualStopRef.current = true;
+      cancelledRef.current = false;
       recognitionRef.current.stop();
-      // Don't set isListening to false here - let onend handle it
     }
   }, [isListening]);
+
+  const cancelListening = useCallback(() => {
+    if (recognitionRef.current) {
+      console.log("Cancelling voice recognition...");
+      cancelledRef.current = true;
+      manualStopRef.current = false;
+      fullTranscriptRef.current = "";
+      setTranscript("");
+      recognitionRef.current.abort();
+      setIsListening(false);
+      setIsFinalizing(false);
+    }
+  }, []);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -156,6 +189,7 @@ export function useVoiceRecognition() {
     isFinalizing,
     startListening,
     stopListening,
+    cancelListening,
     toggleListening,
     setTranscript,
     clearTranscript,
