@@ -42,11 +42,13 @@ export default function Index() {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <MobileHeader 
-          onMenuClick={() => setMobileMenuOpen(true)}
-          onAddClick={() => setAddOpen(true)}
-        />
+        {/* Mobile Header - only on mobile */}
+        {isMobile && (
+          <MobileHeader 
+            onMenuClick={() => setMobileMenuOpen(true)}
+            onAddClick={() => setAddOpen(true)}
+          />
+        )}
 
         {/* Desktop Header */}
         <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border">

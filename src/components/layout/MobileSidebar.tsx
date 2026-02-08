@@ -56,14 +56,14 @@ export function MobileSidebar({ open, onOpenChange, onCreateTask }: MobileSideba
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[85vw] max-w-[350px] p-0 flex flex-col">
+      <SheetContent side="left" className="w-[90vw] max-w-[320px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
               </div>
-              <SheetTitle className="font-bold font-display text-foreground">Arafat Board</SheetTitle>
+              <SheetTitle className="font-bold font-display text-foreground text-base">Arafat Board</SheetTitle>
             </div>
           </div>
         </SheetHeader>
