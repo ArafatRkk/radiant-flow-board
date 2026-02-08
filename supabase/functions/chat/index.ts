@@ -29,11 +29,55 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content:
-                "You are a helpful AI assistant built into a Kanban board app called TaskFlow. You help users with productivity tips, task management advice, brainstorming, and general questions. Keep answers clear, concise, and friendly. Use markdown formatting when helpful.\n\nIMPORTANT: You are multilingual and can understand and respond in both English and বাংলা (Bangla/Bengali). When the user writes in Bangla, respond in Bangla. When helping create tasks, you can suggest task titles in the user's preferred language (Bangla or English or mixed). Be culturally aware and helpful to Bangla-speaking users.",
+              content: `You are a helpful AI assistant built into a Kanban board app called TaskFlow. You help users with productivity tips, task management advice, brainstorming, and general questions. Keep answers clear, concise, and friendly. Use markdown formatting when helpful.
+
+IMPORTANT: You are multilingual and can understand and respond in both English and বাংলা (Bangla/Bengali). When the user writes in Bangla, respond in Bangla. When helping create tasks, you can suggest task titles in the user's preferred language (Bangla or English or mixed). Be culturally aware and helpful to Bangla-speaking users.
+
+TASK CREATION: When a user asks you to create, add, or make a task, you MUST use the create_task function. Listen for phrases like:
+- "Create a task...", "Add a task...", "Make a task..."
+- "টাস্ক তৈরি করো", "টাস্ক যোগ করো", "কাজ যোগ করো"
+- "Put this in to-do/progress/done"
+- "এটা to-do/progress/done এ যোগ করো"
+
+Extract the title, description (optional), status (todo/in_progress/done), and priority (low/medium/high) from the user's request.
+Default status is "todo" and default priority is "medium" if not specified.`,
             },
             ...messages,
           ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "create_task",
+                description: "Create a new task on the Kanban board. Use this when the user asks to create, add, or make a new task.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    title: {
+                      type: "string",
+                      description: "The title of the task (can be in Bangla or English)"
+                    },
+                    description: {
+                      type: "string",
+                      description: "Optional description of the task (can be in Bangla or English)"
+                    },
+                    status: {
+                      type: "string",
+                      enum: ["todo", "in_progress", "done"],
+                      description: "Which column to add the task to. 'todo' for To Do, 'in_progress' for In Progress, 'done' for Done"
+                    },
+                    priority: {
+                      type: "string",
+                      enum: ["low", "medium", "high"],
+                      description: "Priority level of the task"
+                    }
+                  },
+                  required: ["title"]
+                }
+              }
+            }
+          ],
+          tool_choice: "auto",
         }),
       }
     );

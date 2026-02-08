@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 import { AIChatSidebar } from "./AIChatSidebar";
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onCreateTask?: (title: string, description: string, priority: string, status: string) => Promise<void>;
+}
+
+export function AppSidebar({ onCreateTask }: AppSidebarProps) {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<"board" | "ai">("board");
   const [collapsed, setCollapsed] = useState(false);
@@ -103,7 +107,7 @@ export function AppSidebar() {
       {/* AI Panel */}
       {activeTab === "ai" && !collapsed && (
         <div className="flex-1 overflow-hidden">
-          <AIChatSidebar />
+          <AIChatSidebar onCreateTask={onCreateTask} />
         </div>
       )}
 

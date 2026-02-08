@@ -2,15 +2,27 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Bot, Send, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, CheckCircle2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { toast } from "sonner";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export function AIChatSidebar() {
+interface TaskCreationData {
+  title: string;
+  description?: string;
+  status?: "todo" | "in_progress" | "done";
+  priority?: "low" | "medium" | "high";
+}
+
+interface AIChatSidebarProps {
+  onCreateTask?: (title: string, description: string, priority: string, status: string) => Promise<void>;
+}
+
+export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +48,6 @@ export function AIChatSidebar() {
   // Auto-send when voice recognition stops and we have a transcript
   useEffect(() => {
     if (!isListening && transcript.trim()) {
-      // Small delay to ensure final transcript is captured
       const timer = setTimeout(() => {
         if (transcript.trim()) {
           sendMessage(transcript);
@@ -46,6 +57,42 @@ export function AIChatSidebar() {
       return () => clearTimeout(timer);
     }
   }, [isListening, transcript]);
+
+  const handleToolCall = async (toolCall: any) => {
+    if (toolCall.function.name === "create_task" && onCreateTask) {
+      try {
+        const args: TaskCreationData = JSON.parse(toolCall.function.arguments);
+        const title = args.title;
+        const description = args.description || "";
+        const priority = args.priority || "medium";
+        const status = args.status || "todo";
+
+        await onCreateTask(title, description, priority, status);
+
+        const statusLabels: Record<string, string> = {
+          todo: "To Do",
+          in_progress: "In Progress",
+          done: "Done"
+        };
+
+        toast.success(`টাস্ক তৈরি হয়েছে! (Task created!)`, {
+          description: `"${title}" → ${statusLabels[status]}`
+        });
+
+        return {
+          success: true,
+          message: `টাস্ক "${title}" সফলভাবে ${statusLabels[status]} এ যোগ করা হয়েছে! (Task "${title}" successfully added to ${statusLabels[status]}!)`
+        };
+      } catch (error) {
+        console.error("Failed to create task:", error);
+        return {
+          success: false,
+          message: "টাস্ক তৈরি করতে সমস্যা হয়েছে। (Failed to create task.)"
+        };
+      }
+    }
+    return null;
+  };
 
   const sendMessage = async (messageText?: string) => {
     const textToSend = messageText || input;
@@ -64,7 +111,23 @@ export function AIChatSidebar() {
 
       if (error) throw error;
 
-      const assistantContent = data?.choices?.[0]?.message?.content || data?.content || "Sorry, I couldn't process that.";
+      const choice = data?.choices?.[0];
+      let assistantContent = "";
+
+      // Check if there's a tool call
+      if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
+        const toolCall = choice.message.tool_calls[0];
+        const toolResult = await handleToolCall(toolCall);
+        
+        if (toolResult) {
+          assistantContent = toolResult.message;
+        } else {
+          assistantContent = choice?.message?.content || "টাস্ক প্রসেস করা হচ্ছে... (Processing task...)";
+        }
+      } else {
+        assistantContent = choice?.message?.content || data?.content || "দুঃখিত, বুঝতে পারিনি। (Sorry, I couldn't understand that.)";
+      }
+
       setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
       
       // Auto-speak the response if enabled
@@ -100,7 +163,7 @@ export function AIChatSidebar() {
             </div>
             <div>
               <h3 className="font-semibold font-display text-foreground text-sm">AI Assistant</h3>
-              <p className="text-xs text-muted-foreground">বাংলা ও English</p>
+              <p className="text-xs text-muted-foreground">বাংলা ও English • টাস্ক তৈরি</p>
             </div>
           </div>
           {ttsSupported && (
@@ -119,11 +182,15 @@ export function AIChatSidebar() {
 
       <ScrollArea className="flex-1 p-4" ref={scrollRef as any}>
         {messages.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground">
             <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">AI এর সাথে কথা বলুন</p>
-            <p className="text-xs mt-1">🎤 মাইক বাটন চেপে বাংলায় বলুন!</p>
-            <p className="text-xs mt-1 opacity-70">Press mic to speak in Bangla or English</p>
+            <p className="text-sm font-medium">AI এর সাথে কথা বলুন</p>
+            <p className="text-xs mt-2 opacity-70">🎤 মাইক বাটন চেপে বলুন:</p>
+            <div className="mt-3 space-y-1 text-xs">
+              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"একটা টাস্ক তৈরি করো"</p>
+              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"Add a task to In Progress"</p>
+              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"High priority টাস্ক করো"</p>
+            </div>
           </div>
         )}
         <div className="space-y-4">
