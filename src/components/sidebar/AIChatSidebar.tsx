@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Sparkles, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
+import { Bot, Send, User, Sparkles, Loader2, Mic, Square, Volume2, VolumeX, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
@@ -161,6 +161,20 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
     toggleListening();
   };
 
+  const handleCancelRecording = () => {
+    clearTranscript();
+    setInput("");
+    // Stop listening without sending
+    if (isListening) {
+      toggleListening();
+      // Clear after stopping
+      setTimeout(() => {
+        clearTranscript();
+        setInput("");
+      }, 100);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border">
@@ -248,27 +262,16 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
       </ScrollArea>
 
       <div className="p-4 border-t border-border">
-        {/* Voice status indicator */}
-        {isListening && (
-          <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
-            <div className="flex items-center gap-2 text-sm text-primary font-medium">
-              <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-              🎙️ রেকর্ডিং হচ্ছে... (Recording...)
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              সব কিছু বলুন, শেষ হলে 🔴 বাটন চাপুন (Speak everything, press 🔴 when done)
-            </p>
-            {transcript && (
-              <div className="mt-2 p-2 bg-secondary/50 rounded text-xs text-foreground">
-                {transcript}
-              </div>
-            )}
+        {/* Simplified voice recording indicator */}
+        {isListening && transcript && (
+          <div className="mb-2 p-2 bg-secondary/50 rounded-lg text-xs text-foreground">
+            {transcript}
           </div>
         )}
         {isSpeaking && (
           <div className="mb-2 flex items-center gap-2 text-xs text-accent">
             <Volume2 className="w-3 h-3 animate-pulse" />
-            বলছে... (Speaking...)
+            বলছে...
           </div>
         )}
         
@@ -279,34 +282,70 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
           }}
           className="flex gap-2"
         >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={isListening ? "🎤 বলুন..." : "বাংলা বা English এ লিখুন..."}
-            className="bg-secondary/50 border-border"
-            disabled={isLoading || isListening}
-          />
-          {voiceSupported && (
-            <Button
-              type="button"
-              size="icon"
-              variant={isListening ? "destructive" : "secondary"}
-              onClick={handleVoiceToggle}
-              disabled={isLoading}
-              className={`shrink-0 ${isListening ? "animate-pulse" : ""}`}
-              title={isListening ? "Stop recording & send" : "Start voice input"}
-            >
-              {isListening ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </Button>
+          {isListening ? (
+            <>
+              {/* Cancel button */}
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={handleCancelRecording}
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                title="Cancel & restart"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              
+              {/* Recording indicator in input area */}
+              <div className="flex-1 flex items-center gap-2 px-3 bg-secondary/50 border border-border rounded-md">
+                <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                <span className="text-sm text-muted-foreground">🎤 Recording...</span>
+              </div>
+              
+              {/* Stop & send button */}
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                onClick={handleVoiceToggle}
+                className="shrink-0 animate-pulse"
+                title="Stop & send"
+              >
+                <Square className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="বাংলা বা English..."
+                className="bg-secondary/50 border-border"
+                disabled={isLoading}
+              />
+              {voiceSupported && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={handleVoiceToggle}
+                  disabled={isLoading}
+                  className="shrink-0"
+                  title="Voice input"
+                >
+                  <Mic className="w-4 h-4" />
+                </Button>
+              )}
+              <Button 
+                type="submit" 
+                size="icon" 
+                disabled={isLoading || !input.trim()} 
+                className="bg-primary text-primary-foreground shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </>
           )}
-          <Button 
-            type="submit" 
-            size="icon" 
-            disabled={isLoading || !input.trim() || isListening} 
-            className="bg-primary text-primary-foreground shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
         </form>
       </div>
     </div>
