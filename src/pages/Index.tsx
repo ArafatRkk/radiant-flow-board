@@ -31,7 +31,7 @@ export default function Index() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <h1 className="text-2xl font-bold font-display text-foreground">Kanban Board</h1>
+            <h1 className="text-2xl font-bold font-display text-foreground">Arafat Board</h1>
             <p className="text-sm text-muted-foreground">Manage your tasks with drag & drop</p>
           </div>
           <div className="flex items-center gap-3">

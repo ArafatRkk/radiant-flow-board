@@ -39,10 +39,12 @@ export function AppSidebar({ onCreateTask }: AppSidebarProps) {
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      // Add cache-busting timestamp to force refresh
+      const avatarUrlWithCache = `${publicUrl}?t=${Date.now()}`;
 
-      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      await supabase.from("profiles").update({ avatar_url: avatarUrlWithCache }).eq("user_id", user.id);
       toast.success("Profile picture updated!");
-      refreshProfile();
+      await refreshProfile();
     } catch (err: any) {
       toast.error("Failed to upload avatar");
       console.error(err);
@@ -67,7 +69,7 @@ export function AppSidebar({ onCreateTask }: AppSidebarProps) {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-bold font-display text-foreground">TaskFlow</span>
+            <span className="font-bold font-display text-foreground">Arafat Board</span>
           </div>
         )}
         <Button
