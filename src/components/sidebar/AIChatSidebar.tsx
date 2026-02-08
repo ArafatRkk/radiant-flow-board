@@ -34,7 +34,8 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
     transcript, 
     isSupported: voiceSupported, 
     isFinalizing,
-    toggleListening, 
+    toggleListening,
+    cancelListening,
     clearTranscript 
   } = useVoiceRecognition();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useTextToSpeech();
@@ -55,16 +56,15 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
   // Auto-send when user manually stops recording (isFinalizing becomes true)
   useEffect(() => {
     if (isFinalizing && transcript.trim()) {
-      // Small delay to ensure final transcript is captured
-      const timer = setTimeout(() => {
-        if (transcript.trim()) {
-          sendMessage(transcript);
-          clearTranscript();
-        }
-      }, 300);
-      return () => clearTimeout(timer);
+      console.log("Finalizing voice input, sending:", transcript);
+      const textToSend = transcript;
+      // Clear immediately to prevent double sends
+      clearTranscript();
+      setInput("");
+      // Send the message
+      sendMessage(textToSend);
     }
-  }, [isFinalizing, transcript]);
+  }, [isFinalizing]);
 
   const handleToolCall = async (toolCall: any) => {
     if (toolCall.function.name === "create_task" && onCreateTask) {
@@ -162,17 +162,9 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
   };
 
   const handleCancelRecording = () => {
-    clearTranscript();
+    console.log("Cancel button clicked");
+    cancelListening();
     setInput("");
-    // Stop listening without sending
-    if (isListening) {
-      toggleListening();
-      // Clear after stopping
-      setTimeout(() => {
-        clearTranscript();
-        setInput("");
-      }, 100);
-    }
   };
 
   return (
