@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, CheckCircle2 } from "lucide-react";
+import { Bot, Send, User, Sparkles, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
@@ -29,7 +29,14 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { isListening, transcript, isSupported: voiceSupported, toggleListening, setTranscript } = useVoiceRecognition();
+  const { 
+    isListening, 
+    transcript, 
+    isSupported: voiceSupported, 
+    isFinalizing,
+    toggleListening, 
+    clearTranscript 
+  } = useVoiceRecognition();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useTextToSpeech();
 
   useEffect(() => {
@@ -38,25 +45,26 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
     }
   }, [messages]);
 
-  // Update input when transcript changes
+  // Update input when transcript changes (while listening)
   useEffect(() => {
     if (transcript) {
       setInput(transcript);
     }
   }, [transcript]);
 
-  // Auto-send when voice recognition stops and we have a transcript
+  // Auto-send when user manually stops recording (isFinalizing becomes true)
   useEffect(() => {
-    if (!isListening && transcript.trim()) {
+    if (isFinalizing && transcript.trim()) {
+      // Small delay to ensure final transcript is captured
       const timer = setTimeout(() => {
         if (transcript.trim()) {
           sendMessage(transcript);
-          setTranscript("");
+          clearTranscript();
         }
-      }, 500);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isListening, transcript]);
+  }, [isFinalizing, transcript]);
 
   const handleToolCall = async (toolCall: any) => {
     if (toolCall.function.name === "create_task" && onCreateTask) {
@@ -185,11 +193,10 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
           <div className="text-center py-8 text-muted-foreground">
             <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm font-medium">AI এর সাথে কথা বলুন</p>
-            <p className="text-xs mt-2 opacity-70">🎤 মাইক বাটন চেপে বলুন:</p>
+            <p className="text-xs mt-2 opacity-70">🎤 মাইক বাটন চাপুন, বলুন, তারপর থামাতে আবার চাপুন</p>
             <div className="mt-3 space-y-1 text-xs">
-              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"একটা টাস্ক তৈরি করো"</p>
-              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"Add a task to In Progress"</p>
-              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"High priority টাস্ক করো"</p>
+              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"একটা high priority টাস্ক করো: Meeting at 3pm, description: discuss project"</p>
+              <p className="bg-secondary/50 rounded-lg px-3 py-1.5 inline-block">"Add task Buy groceries to In Progress"</p>
             </div>
           </div>
         )}
@@ -243,9 +250,19 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
       <div className="p-4 border-t border-border">
         {/* Voice status indicator */}
         {isListening && (
-          <div className="mb-2 flex items-center gap-2 text-xs text-primary animate-pulse">
-            <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
-            শুনছি... (Listening...)
+          <div className="mb-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <div className="flex items-center gap-2 text-sm text-primary font-medium">
+              <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
+              🎙️ রেকর্ডিং হচ্ছে... (Recording...)
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              সব কিছু বলুন, শেষ হলে 🔴 বাটন চাপুন (Speak everything, press 🔴 when done)
+            </p>
+            {transcript && (
+              <div className="mt-2 p-2 bg-secondary/50 rounded text-xs text-foreground">
+                {transcript}
+              </div>
+            )}
           </div>
         )}
         {isSpeaking && (
@@ -265,7 +282,7 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="বাংলা বা English এ লিখুন..."
+            placeholder={isListening ? "🎤 বলুন..." : "বাংলা বা English এ লিখুন..."}
             className="bg-secondary/50 border-border"
             disabled={isLoading || isListening}
           />
@@ -277,12 +294,17 @@ export function AIChatSidebar({ onCreateTask }: AIChatSidebarProps) {
               onClick={handleVoiceToggle}
               disabled={isLoading}
               className={`shrink-0 ${isListening ? "animate-pulse" : ""}`}
-              title={isListening ? "Stop listening" : "Start voice input"}
+              title={isListening ? "Stop recording & send" : "Start voice input"}
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {isListening ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </Button>
           )}
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()} className="bg-primary text-primary-foreground shrink-0">
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isLoading || !input.trim() || isListening} 
+            className="bg-primary text-primary-foreground shrink-0"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </form>
