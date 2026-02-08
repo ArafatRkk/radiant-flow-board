@@ -42,7 +42,7 @@ export function KanbanBoard() {
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-6 p-6 overflow-x-auto flex-1">
+        <div className="flex gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6 overflow-x-auto flex-1 pb-6">
           {COLUMNS.map(status => (
             <KanbanColumn
               key={status}

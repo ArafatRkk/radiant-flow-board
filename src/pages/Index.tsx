@@ -8,11 +8,16 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { AddTaskDialog } from "@/components/kanban/AddTaskDialog";
 import { useTasks } from "@/hooks/useTasks";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileHeader } from "@/components/layout/MobileHeader";
+import { MobileSidebar } from "@/components/layout/MobileSidebar";
 
 export default function Index() {
   const { user, loading } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { addTask } = useTasks();
+  const isMobile = useIsMobile();
 
   if (loading) {
     return (
@@ -26,10 +31,25 @@ export default function Index() {
 
   return (
     <div className="flex min-h-screen bg-background w-full">
-      <AppSidebar onCreateTask={addTask} />
+      {/* Desktop Sidebar */}
+      {!isMobile && <AppSidebar onCreateTask={addTask} />}
+      
+      {/* Mobile Sidebar */}
+      <MobileSidebar 
+        open={mobileMenuOpen} 
+        onOpenChange={setMobileMenuOpen} 
+        onCreateTask={addTask}
+      />
+
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+        {/* Mobile Header */}
+        <MobileHeader 
+          onMenuClick={() => setMobileMenuOpen(true)}
+          onAddClick={() => setAddOpen(true)}
+        />
+
+        {/* Desktop Header */}
+        <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Arafat Board</h1>
             <p className="text-sm text-muted-foreground">Manage your tasks with drag & drop</p>

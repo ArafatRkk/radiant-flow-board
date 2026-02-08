@@ -39,7 +39,7 @@ export function TaskCard({ task, index, onDelete, onEdit }: TaskCardProps) {
           className="mb-3"
         >
           <Card
-            className={`p-4 bg-card border-border hover:border-primary/30 transition-all duration-200 cursor-grab active:cursor-grabbing group ${
+            className={`p-3 sm:p-4 bg-card border-border hover:border-primary/30 transition-all duration-200 cursor-grab active:cursor-grabbing group ${
               snapshot.isDragging ? "shadow-xl shadow-primary/20 rotate-2 scale-105" : ""
             }`}
           >
@@ -49,7 +49,7 @@ export function TaskCard({ task, index, onDelete, onEdit }: TaskCardProps) {
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <MoreHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -64,9 +64,9 @@ export function TaskCard({ task, index, onDelete, onEdit }: TaskCardProps) {
               </DropdownMenu>
             </div>
 
-            <h4 className="font-semibold text-sm text-foreground mb-1">{task.title}</h4>
+            <h4 className="font-semibold text-sm text-foreground mb-1 break-words">{task.title}</h4>
             {task.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{task.description}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 mb-3 break-words">{task.description}</p>
             )}
 
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
