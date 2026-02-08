@@ -63,7 +63,7 @@ export function MobileSidebar({ open, onOpenChange, onCreateTask }: MobileSideba
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
               </div>
-              <SheetTitle className="font-bold font-display text-foreground text-base">Arafat Board</SheetTitle>
+              <SheetTitle className="font-bold font-display text-foreground text-base">BBM Board</SheetTitle>
             </div>
           </div>
         </SheetHeader>
@@ -72,9 +72,8 @@ export function MobileSidebar({ open, onOpenChange, onCreateTask }: MobileSideba
         <div className="p-2 space-y-1 border-b border-border">
           <Button
             variant={activeTab === "board" ? "secondary" : "ghost"}
-            className={`w-full justify-start ${
-              activeTab === "board" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
-            }`}
+            className={`w-full justify-start ${activeTab === "board" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
+              }`}
             onClick={() => {
               setActiveTab("board");
               onOpenChange(false);
@@ -85,9 +84,8 @@ export function MobileSidebar({ open, onOpenChange, onCreateTask }: MobileSideba
           </Button>
           <Button
             variant={activeTab === "ai" ? "secondary" : "ghost"}
-            className={`w-full justify-start ${
-              activeTab === "ai" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
-            }`}
+            className={`w-full justify-start ${activeTab === "ai" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"
+              }`}
             onClick={() => setActiveTab("ai")}
           >
             <Bot className="w-4 h-4 mr-2" />
